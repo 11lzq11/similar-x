@@ -19,18 +19,28 @@ void main() {
     }
   });
 
-  test('every registered adapter is a stub for now, except Telegram',
+  test('implemented adapters report their real status; the rest are stubs',
       () async {
     for (final PlatformAdapter adapter in buildAdapterRegistry()) {
-      if (adapter.id == 'telegram') {
-        // Telegram is implemented (TDLib); it is limited, not planned.
-        // Logged out it still behaves like a guest: empty timeline.
-        expect(adapter.status, PlatformStatus.limited);
-      } else {
-        expect(adapter.status, PlatformStatus.planned);
+      switch (adapter.id) {
+        case 'telegram':
+          // Telegram is implemented (TDLib); it is limited, not planned.
+          // Logged out it still behaves like a guest: empty timeline.
+          expect(adapter.status, PlatformStatus.limited);
+          expect(await adapter.fetchTimeline(), isEmpty);
+          expect(await adapter.isLoggedIn, isFalse);
+        case 'mastodon':
+          // Mastodon is implemented (REST). Guests get the public
+          // timeline, which needs the network, so it is not fetched
+          // here — see mastodon_adapter_test.dart.
+          expect(adapter.status, PlatformStatus.ready);
+          expect(adapter.requiresLogin, isFalse);
+          expect(await adapter.isLoggedIn, isFalse);
+        default:
+          expect(adapter.status, PlatformStatus.planned);
+          expect(await adapter.fetchTimeline(), isEmpty);
+          expect(await adapter.isLoggedIn, isFalse);
       }
-      expect(await adapter.fetchTimeline(), isEmpty);
-      expect(await adapter.isLoggedIn, isFalse);
     }
   });
 

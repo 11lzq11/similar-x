@@ -22,7 +22,7 @@ import 'youtube_adapter.dart';
 /// with real clients (Telegram) hold runtime dependencies.
 List<PlatformAdapter> buildAdapterRegistry() => <PlatformAdapter>[
       TelegramAdapter(),
-      const MastodonAdapter(),
+      MastodonAdapter(),
       BlueskyAdapter(),
       YouTubeAdapter(),
       RedditAdapter(),

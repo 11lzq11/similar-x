@@ -28,6 +28,8 @@ dependencies:
   # YouTube Data API). Telegram uses TDLib over FFI (see
   # lib/adapters/telegram/).
   http: ^1.2.2
+  # SHA-256 for OAuth PKCE (Mastodon login code challenge).
+  crypto: ^3.0.8
   # Dart FFI helpers for the TDLib JSON interface (libtdjson). The native
   # library is NOT committed to the repo: scripts/fetch_tdlib.py downloads
   # the pinned prebuilt libtdjson per platform at build time.
