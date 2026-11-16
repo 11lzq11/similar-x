@@ -52,7 +52,7 @@ app.*.map.json
 # scripts/tdjson-manifest.json; never committed (each is ~13-22 MB
 # compressed, ~26-59 MB unpacked).
 /android/app/src/main/jniLibs/
-/ios/tdjson/
-/macos/tdjson/
+/ios/Runner/tdjson/
+/macos/Runner/tdjson/
 /windows/tdjson.dll
 /linux/libtdjson.so

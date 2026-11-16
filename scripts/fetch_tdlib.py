@@ -17,8 +17,8 @@ Usage (run from the app root):
 
 Targets (relative to the app root):
   android  -> android/app/src/main/jniLibs/<abi>/libtdjson.so
-  ios      -> ios/tdjson/tdjson.xcframework (whole archive)
-  macos    -> macos/tdjson/libtdjson.dylib
+  ios      -> ios/Runner/tdjson/tdjson.xcframework (whole archive)
+  macos    -> macos/Runner/tdjson/libtdjson.dylib
   windows  -> windows/tdjson.dll
   linux    -> linux/libtdjson.so
 Already-correct targets are skipped, so re-running is cheap.
