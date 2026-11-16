@@ -85,6 +85,13 @@ jobs:
       - run: flutter pub get
       - run: python3 scripts/fetch_tdlib.py --platform ios
       - run: flutter build ipa --release --no-codesign
+      # `flutter build ipa --no-codesign` builds the .xcarchive but skips
+      # the .ipa ("Codesigning disabled, skipping IPA"), so package the
+      # unsigned .ipa by hand: an .ipa is a zip with Payload/<App>.app.
+      - run: |
+          mkdir -p build/ios/ipa/Payload
+          cp -r build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa && zip -r Similar-X-iOS-unsigned.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
           name: Similar-X-iOS-unsigned
