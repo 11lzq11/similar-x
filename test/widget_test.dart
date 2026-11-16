@@ -51,6 +51,15 @@ void main() {
           expect(adapter.status, PlatformStatus.limited);
           expect(adapter.requiresLogin, isFalse);
           expect(await adapter.isLoggedIn, isFalse);
+        case 'reddit':
+          // Reddit is implemented (Data API OAuth) but limited
+          // by the free tier and the manual-approval gate.
+          // Guests get r/popular, which needs the network, so
+          // the timeline is not fetched here — see
+          // reddit_adapter_test.dart.
+          expect(adapter.status, PlatformStatus.limited);
+          expect(adapter.requiresLogin, isFalse);
+          expect(await adapter.isLoggedIn, isFalse);
         default:
           expect(adapter.status, PlatformStatus.planned);
           expect(await adapter.fetchTimeline(), isEmpty);

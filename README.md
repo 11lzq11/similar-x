@@ -34,7 +34,7 @@ platforms get a WebView fallback or are cut.
 | Mastodon | ✅ Implemented / 已实现 | Full client, open REST + OAuth (PKCE) |
 | Bluesky | ✅ Implemented / 已实现 | Full client, AT Protocol, App Password login, public read without login |
 | YouTube | ⚠️ Limited / 有限 | Official Data API (10k units/day) + InnerTube fallback |
-| Reddit | ⚠️ Limited / 有限 | Free tier 100/min OAuth; manual approval required |
+| Reddit | ⚠️ Limited / 有限 | Implemented — Data API OAuth (own installed app); free tier 100/min; manual approval needed since Nov 2025 |
 | Threads | ⚠️ Limited / 有限 | Own account only — post + manage, no public timeline |
 | X | 🔴 WebView only / 仅网页版 | Pay-per-read API + ToS bans replacement clients |
 | Instagram | 🔴 WebView only / 仅网页版 | No personal-account API (Basic Display closed 2024) |
@@ -59,6 +59,9 @@ lib/
     bluesky_adapter.dart    # Tier 1: AT Protocol
     youtube_adapter.dart    # Tier 2: Data API v3
     reddit_adapter.dart     # Tier 2: Data API (OAuth per user)
+    reddit/
+      reddit_client.dart    # Data API: OAuth PKCE + app-only guest token
+      reddit_models.dart    # Post / Comment / Subreddit / Message
     threads_adapter.dart    # Tier 2: Threads API (own account)
     webview_adapter.dart    # Tier 3: X / Instagram / Facebook
   screens/
@@ -158,7 +161,7 @@ another PDS can change the service host in settings.
 - [x] v0.2.0 — Mastodon (REST + OAuth) + Bluesky (AT Protocol + App Password): timelines, post, like, repost, notifications, guest-first
 - [x] v0.3.0 — Telegram via TDLib (FFI), login + chat list + messages
 - [ ] v0.4.0 — unified timeline, posting, likes, comments
-- [ ] v0.5.0 — YouTube / Reddit / Threads (limited tiers), WebView tab
+- [ ] v0.5.0 — YouTube ✅ / Reddit ✅ / Threads (limited tiers), WebView tab
 
 ## Contributing / 参与
 
