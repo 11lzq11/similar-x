@@ -71,7 +71,6 @@ class TelegramAdapter extends PlatformAdapter {
   @override
   Set<AdapterCapability> get capabilities => const <AdapterCapability>{
         AdapterCapability.timeline,
-        AdapterCapability.post,
         AdapterCapability.directMessage,
       };
 
@@ -79,7 +78,8 @@ class TelegramAdapter extends PlatformAdapter {
   String get note =>
       'Login, chats and messages work via TDLib; reactions and '
       'notifications are next. Needs your own api_id/api_hash from '
-      'my.telegram.org.';
+      'my.telegram.org. Telegram has no feed to post to — send a '
+      'message from a chat instead.';
 
   @override
   bool get requiresLogin => true;
@@ -124,6 +124,11 @@ class TelegramAdapter extends PlatformAdapter {
     if (client == null) return const Stream<TdlibAuthState>.empty();
     return client.authStateStream;
   }
+
+  /// The current authorization state, or null before the client
+  /// exists. The stream does not replay, so the UI reads this for
+  /// the initial step and the stream for later transitions.
+  TdlibAuthState? get currentAuthState => _client?.authState;
 
   @override
   Future<bool> get isLoggedIn async {
@@ -213,6 +218,50 @@ class TelegramAdapter extends PlatformAdapter {
   Future<TelegramMessage> sendMessage(int chatId, String text) async {
     if (!await isLoggedIn) throw TelegramNotLoggedInException();
     return _client!.sendMessage(chatId, text);
+  }
+
+  /// The chat id behind a unified [Post] (`telegram:<chatId>`).
+  /// Chat ids can be negative (channels), so no digit-only
+  /// assumption is made.
+  int _chatIdOf(Post post) {
+    final String raw = post.id.startsWith('telegram:')
+        ? post.id.substring(9)
+        : post.id;
+    // A message post carries `telegram:<chatId>:<messageId>`; the
+    // chat id is the part before the second colon.
+    final String chatPart = raw.split(':').first;
+    final int? chatId = int.tryParse(chatPart);
+    if (chatId == null) {
+      throw const FormatException('Not a Telegram chat post id.');
+    }
+    return chatId;
+  }
+
+  /// Sends a message to the chat this post represents — the
+  /// unified comment action for Telegram.
+  @override
+  Future<void> commentOn(Post post, String text) async {
+    await sendMessage(_chatIdOf(post), text);
+  }
+
+  /// The messages of the chat this post represents, newest first
+  /// — the unified comment thread for Telegram.
+  @override
+  Future<List<Post>> fetchComments(Post post) async {
+    final List<TelegramMessage> messages =
+        await fetchMessages(_chatIdOf(post));
+    return messages
+        .map(
+          (TelegramMessage message) => Post(
+            id: 'telegram:${message.chatId}:${message.id}',
+            platformId: id,
+            authorName: message.senderName,
+            authorHandle: message.isOutgoing ? 'you' : 'telegram',
+            text: message.text,
+            createdAt: message.date,
+          ),
+        )
+        .toList();
   }
 
   /// Logs out: the session is revoked on Telegram's side, the local

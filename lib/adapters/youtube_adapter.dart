@@ -266,7 +266,7 @@ class YouTubeAdapter extends PlatformAdapter {
 
   /// Top-level comments on a video, newest first. Works with
   /// just the API key.
-  Future<List<YouTubeComment>> fetchComments(
+  Future<List<YouTubeComment>> fetchVideoComments(
     String videoId, {
     int limit = 20,
   }) async {
@@ -293,6 +293,60 @@ class YouTubeAdapter extends PlatformAdapter {
   Future<void> unlikeVideo(String videoId) async {
     final YouTubeClient client = await _requireLogin();
     await client.rateVideo(videoId, rating: 'none');
+  }
+
+  /// The video id behind a unified [Post] (`youtube:<videoId>`).
+  /// Comment posts (`youtube:comment:<id>`) cannot be liked or
+  /// replied to — only top-level comments on a video are supported.
+  String _videoIdOf(Post post) {
+    final String raw =
+        post.id.startsWith('youtube:') ? post.id.substring(8) : post.id;
+    if (raw.startsWith('comment:')) {
+      throw UnsupportedError(
+        'Replying to a YouTube comment is not supported yet.',
+      );
+    }
+    return raw;
+  }
+
+  /// Likes a video — the unified like action.
+  @override
+  Future<void> like(Post post) async {
+    await likeVideo(_videoIdOf(post));
+  }
+
+  /// Clears the like on a video.
+  @override
+  Future<void> unlike(Post post) async {
+    await unlikeVideo(_videoIdOf(post));
+  }
+
+  /// Posts a top-level comment on a video — the unified comment
+  /// action.
+  @override
+  Future<void> commentOn(Post post, String text) async {
+    await postComment(_videoIdOf(post), text);
+  }
+
+  /// The top-level comments on a video, newest first.
+  @override
+  Future<List<Post>> fetchComments(Post post) async {
+    final List<YouTubeComment> comments =
+        await fetchVideoComments(_videoIdOf(post));
+    return comments
+        .map(
+          (YouTubeComment comment) => Post(
+            id: 'youtube:comment:${comment.id}',
+            platformId: id,
+            authorName: comment.authorName,
+            authorHandle: comment.authorChannelId,
+            text: comment.text,
+            createdAt: comment.publishedAt,
+            likeCount: comment.likeCount,
+            replyCount: comment.replyCount,
+          ),
+        )
+        .toList();
   }
 
   /// Subscribes to a channel. OAuth only.

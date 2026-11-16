@@ -627,7 +627,7 @@ void main() {
     test('comments list parses authors and likes', () async {
       final YouTubeAdapter adapter = adapterWith();
       final List<YouTubeComment> comments =
-          await adapter.fetchComments('vid1');
+          await adapter.fetchVideoComments('vid1');
       expect(comments.length, 2);
       expect(comments[0].authorName, 'Bob');
       expect(comments[0].text, 'Great video!');

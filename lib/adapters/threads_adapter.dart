@@ -246,6 +246,41 @@ class ThreadsAdapter extends PlatformAdapter {
     );
   }
 
+  /// The media id behind a unified [Post] (`threads:<id>`).
+  String _mediaIdOf(Post post) =>
+      post.id.startsWith('threads:') ? post.id.substring(8) : post.id;
+
+  /// Posts a text thread — the unified post action.
+  @override
+  Future<void> publishText(
+    String text, {
+    String? subreddit,
+    String? title,
+  }) async {
+    await postText(text);
+  }
+
+  /// Replies to a post. The reply targets the root post's id.
+  @override
+  Future<void> commentOn(Post post, String text) async {
+    await replyToThread(replyToId: _mediaIdOf(post), text: text);
+  }
+
+  /// Reposts a post. The official API has no unrepost, so the
+  /// base [PlatformAdapter.unrepost] (which throws) applies.
+  @override
+  Future<void> repost(Post post) async {
+    await repostThread(_mediaIdOf(post));
+  }
+
+  /// The replies to a post.
+  @override
+  Future<List<Post>> fetchComments(Post post) async {
+    final List<ThreadsPost> replies =
+        await fetchReplies(_mediaIdOf(post));
+    return replies.map(_toPost).toList();
+  }
+
   /// Posts a text thread. Returns the published post's media
   /// id. At most 500 characters.
   Future<String> postText(

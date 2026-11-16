@@ -37,6 +37,9 @@ dependencies:
   # App documents directory for TDLib's own database (auth session, chats).
   path_provider: ^2.1.5
   intl: ^0.20.2
+  # Opens OAuth authorize URLs in the system browser during login
+  # (Mastodon, YouTube, Reddit, Threads).
+  url_launcher: ^6.3.1
   # WebView fallback for closed platforms (X, Instagram, Facebook, Discord):
   # the official mobile web is embedded; the login stays inside the WebView
   # and no user token is ever touched. Desktop WebView support is limited;

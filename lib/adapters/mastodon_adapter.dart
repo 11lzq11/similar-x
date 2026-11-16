@@ -145,7 +145,62 @@ class MastodonAdapter extends PlatformAdapter {
       likeCount: shown.favouritesCount,
       repostCount: shown.reblogCount,
       replyCount: shown.repliesCount,
+      likedByMe: shown.favourited,
+      repostedByMe: shown.reblogged,
     );
+  }
+
+  /// The status id behind a unified [Post] (`mastodon:<id>`).
+  String _statusIdOf(Post post) =>
+      post.id.startsWith('mastodon:') ? post.id.substring(9) : post.id;
+
+  /// Posts a status ("toot") — the unified post action.
+  @override
+  Future<void> publishText(
+    String text, {
+    String? subreddit,
+    String? title,
+  }) async {
+    await postStatus(text);
+  }
+
+  /// Favourites (likes) a post.
+  @override
+  Future<void> like(Post post) async {
+    await favourite(_statusIdOf(post));
+  }
+
+  /// Removes a favourite.
+  @override
+  Future<void> unlike(Post post) async {
+    await unfavourite(_statusIdOf(post));
+  }
+
+  /// Boosts (reposts) a post.
+  @override
+  Future<void> repost(Post post) async {
+    await reblog(_statusIdOf(post));
+  }
+
+  /// Removes a boost.
+  @override
+  Future<void> unrepost(Post post) async {
+    await unreblog(_statusIdOf(post));
+  }
+
+  /// Replies to a post.
+  @override
+  Future<void> commentOn(Post post, String text) async {
+    await reply(_statusIdOf(post), text);
+  }
+
+  /// The replies to a post (the status context's descendants).
+  @override
+  Future<List<Post>> fetchComments(Post post) async {
+    final MastodonClient client = await _ensureClient();
+    final List<MastodonStatus> replies =
+        await client.statusContext(_statusIdOf(post));
+    return replies.map(_toPost).toList();
   }
 
   /// Starts the login flow: registers Similar-X on the instance

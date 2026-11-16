@@ -257,6 +257,23 @@ class MastodonClient {
     );
   }
 
+  /// The context of a status: its ancestors and descendants
+  /// (replies). Returns the descendants (replies) in thread order.
+  /// The endpoint is public, so it works for guests too.
+  Future<List<MastodonStatus>> statusContext(String statusId) async {
+    final http.Response response = await _get(
+      _uri('/api/v1/statuses/$statusId/context'),
+    );
+    final Map<String, dynamic> json =
+        _decode(response) as Map<String, dynamic>;
+    final List<Object?> descendants =
+        (json['descendants'] as List<Object?>?) ?? const <Object?>[];
+    return descendants
+        .whereType<Map<String, dynamic>>()
+        .map(MastodonStatus.fromJson)
+        .toList();
+  }
+
   /// Favourites (likes) a status.
   Future<MastodonStatus> favourite(String statusId) async {
     final http.Response response = await _post(

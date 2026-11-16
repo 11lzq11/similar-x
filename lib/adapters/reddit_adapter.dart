@@ -161,7 +161,109 @@ class RedditAdapter extends PlatformAdapter {
       createdAt: post.createdAt,
       likeCount: post.score,
       replyCount: post.commentCount,
+      likedByMe: post.likes == true,
+      meta: <String, String>{'subreddit': post.subreddit},
     );
+  }
+
+  /// The post fullname behind a unified [Post] (`reddit:<t3_...>`).
+  String _fullnameOf(Post post) =>
+      post.id.startsWith('reddit:') ? post.id.substring(7) : post.id;
+
+  /// The subreddit a post belongs to, from [Post.meta] when present
+  /// (the timeline fills it in) or by fetching the post.
+  Future<String> _subredditOf(Post post) async {
+    final String? subreddit = post.meta['subreddit'];
+    if (subreddit != null && subreddit.isNotEmpty) return subreddit;
+    final RedditPost? full = await fetchPost(_fullnameOf(post));
+    final String? fetched = full?.subreddit;
+    if (fetched == null || fetched.isEmpty) {
+      throw const RedditApiException(
+        'Could not work out which subreddit this post is in.',
+      );
+    }
+    return fetched;
+  }
+
+  /// Submits a text post — the unified post action. Reddit needs a
+  /// subreddit and a title; the title defaults to the first line of
+  /// the text.
+  @override
+  Future<void> publishText(
+    String text, {
+    String? subreddit,
+    String? title,
+  }) async {
+    final String target = subreddit?.trim() ?? '';
+    if (target.isEmpty) {
+      throw const RedditApiException(
+        'Reddit needs a subreddit: pick one before posting.',
+      );
+    }
+    final String postTitle = (title?.trim().isNotEmpty ?? false)
+        ? title!.trim()
+        : text.trim().split('\n').first;
+    await submitTextPost(
+      subreddit: target,
+      title: postTitle,
+      text: text,
+    );
+  }
+
+  /// Upvotes a post.
+  @override
+  Future<void> like(Post post) async {
+    await upvote(_fullnameOf(post));
+  }
+
+  /// Clears the vote on a post.
+  @override
+  Future<void> unlike(Post post) async {
+    await clearVote(_fullnameOf(post));
+  }
+
+  /// Comments on a post.
+  @override
+  Future<void> commentOn(Post post, String text) async {
+    await postComment(thingId: _fullnameOf(post), text: text);
+  }
+
+  /// The comments on a post, flattened depth-first (nested replies
+  /// keep their depth in [Post.meta] so the UI can indent them).
+  @override
+  Future<List<Post>> fetchComments(Post post) async {
+    final String subreddit = await _subredditOf(post);
+    final String postId = _fullnameOf(post);
+    final List<RedditComment> comments = await fetchPostComments(
+      subreddit: subreddit,
+      postId: postId,
+    );
+    final List<Post> flat = <Post>[];
+    void addAll(List<RedditComment> list) {
+      for (final RedditComment comment in list) {
+        flat.add(
+          Post(
+            id: 'reddit:${comment.name}',
+            platformId: id,
+            authorName: comment.author,
+            authorHandle: 'u/${comment.author}',
+            text: comment.body,
+            createdAt: comment.createdAt,
+            likeCount: comment.score,
+            likedByMe: false,
+            meta: <String, String>{
+              'depth': comment.depth.toString(),
+              'subreddit': subreddit,
+              'parentId': comment.parentId,
+            },
+          ),
+        );
+        addAll(comment.replies);
+      }
+    }
+
+    addAll(comments);
+    return flat;
   }
 
   /// One subreddit feed (hot/new/top/rising). Works for guests

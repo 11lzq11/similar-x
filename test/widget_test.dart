@@ -7,6 +7,8 @@ import 'package:similar_x/core/app_state.dart';
 import 'package:similar_x/core/platform_adapter.dart';
 import 'package:similar_x/main.dart';
 
+import 'fake_adapter.dart';
+
 void main() {
   test('adapter registry has unique ids and names', () {
     final List<PlatformAdapter> adapters = buildAdapterRegistry();
@@ -19,8 +21,7 @@ void main() {
     }
   });
 
-  test('implemented adapters report their real status; the rest are stubs',
-      () async {
+  test('implemented adapters report their real status', () async {
     for (final PlatformAdapter adapter in buildAdapterRegistry()) {
       switch (adapter.id) {
         case 'telegram':
@@ -88,15 +89,27 @@ void main() {
     }
   });
 
-  testWidgets('app renders the platform list', (WidgetTester tester) async {
+  testWidgets('app renders the timeline tab and the platform list',
+      (WidgetTester tester) async {
+    // Fake adapters: the real registry would do network I/O on the
+    // timeline tab (guest feeds), which a smoke test must not need.
     await tester.pumpWidget(
       ChangeNotifierProvider<AppState>(
-        create: (_) => AppState(adapters: buildAdapterRegistry()),
+        create: (_) => AppState(adapters: <PlatformAdapter>[
+          FakeAdapter(id: 'fake_a', displayName: 'Telegram'),
+          FakeAdapter(id: 'fake_b', displayName: 'Mastodon'),
+          FakeAdapter(id: 'fake_c', displayName: 'Bluesky'),
+        ]),
         child: const SimilarXApp(),
       ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Similar-X'), findsWidgets);
+    expect(find.text('Timeline'), findsOneWidget);
+    expect(find.text('No posts yet — pull to refresh.'), findsOneWidget);
+    // The platform list lives on the second tab.
+    await tester.tap(find.text('Platforms'));
+    await tester.pumpAndSettle();
     expect(find.text('Telegram'), findsOneWidget);
     expect(find.text('Mastodon'), findsOneWidget);
     expect(find.text('Bluesky'), findsOneWidget);

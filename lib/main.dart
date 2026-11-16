@@ -20,9 +20,11 @@ void main() {
 
 /// Similar-X — one app for every social network.
 ///
-/// v0.1.0 is a compiling skeleton: the app shell, Chinese/English
-/// locales, and the modular adapter registry. Each platform adapter is
-/// a stub until its real API client lands (see lib/adapters/).
+/// The app shell, Chinese/English locales and the modular adapter
+/// registry live here; every registered adapter is a real
+/// implementation (see lib/adapters/). The home screen merges all
+/// adapters into one timeline and offers per-platform login and
+/// posting (see lib/screens/).
 class SimilarXApp extends StatelessWidget {
   const SimilarXApp({super.key});
 

@@ -133,7 +133,124 @@ class BlueskyAdapter extends PlatformAdapter {
       likeCount: post.likeCount,
       repostCount: post.repostCount,
       replyCount: post.replyCount,
+      likedByMe: post.likedByMe,
+      repostedByMe: post.repostedByMe,
+      meta: <String, String>{
+        'cid': post.cid,
+        if (post.likeUri != null) 'likeUri': post.likeUri!,
+        if (post.repostUri != null) 'repostUri': post.repostUri!,
+      },
     );
+  }
+
+  /// A [BlueskyPost] as a unified [Post] (for thread replies).
+  Post _threadPostToPost(BlueskyPost post) => Post(
+        id: 'bluesky:${post.uri}',
+        platformId: id,
+        authorName: post.author.name,
+        authorHandle: post.author.handle,
+        text: post.text,
+        createdAt: post.createdAt,
+        likeCount: post.likeCount,
+        repostCount: post.repostCount,
+        replyCount: post.replyCount,
+        likedByMe: post.likedByMe,
+        repostedByMe: post.repostedByMe,
+        meta: <String, String>{
+          'cid': post.cid,
+          if (post.likeUri != null) 'likeUri': post.likeUri!,
+          if (post.repostUri != null) 'repostUri': post.repostUri!,
+        },
+      );
+
+  /// The post URI behind a unified [Post] (`bluesky:<uri>`).
+  String _uriOf(Post post) =>
+      post.id.startsWith('bluesky:') ? post.id.substring(8) : post.id;
+
+  /// The record CID a like/repost/reply needs. The timeline fills
+  /// it into [Post.meta]; when it is missing (e.g. a post built
+  /// elsewhere) the thread is fetched to resolve it.
+  Future<String> _cidOf(Post post) async {
+    final String? cid = post.meta['cid'];
+    if (cid != null && cid.isNotEmpty) return cid;
+    final BlueskyThreadPost thread = await fetchThread(_uriOf(post));
+    return thread.post.cid;
+  }
+
+  /// The like record's URI for an unlike. Prefers [Post.meta];
+  /// falls back to the thread's viewer state.
+  Future<String> _likeUriOf(Post post) async {
+    final String? likeUri = post.meta['likeUri'];
+    if (likeUri != null && likeUri.isNotEmpty) return likeUri;
+    final BlueskyThreadPost thread = await fetchThread(_uriOf(post));
+    final String? uri = thread.post.likeUri;
+    if (uri == null || uri.isEmpty) {
+      throw const BlueskyApiException('This post is not liked by me.');
+    }
+    return uri;
+  }
+
+  /// The repost record's URI for an unrepost. Same fallback as
+  /// [_likeUriOf].
+  Future<String> _repostUriOf(Post post) async {
+    final String? repostUri = post.meta['repostUri'];
+    if (repostUri != null && repostUri.isNotEmpty) return repostUri;
+    final BlueskyThreadPost thread = await fetchThread(_uriOf(post));
+    final String? uri = thread.post.repostUri;
+    if (uri == null || uri.isEmpty) {
+      throw const BlueskyApiException('This post is not reposted by me.');
+    }
+    return uri;
+  }
+
+  /// Posts text — the unified post action.
+  @override
+  Future<void> publishText(
+    String text, {
+    String? subreddit,
+    String? title,
+  }) async {
+    await postText(text);
+  }
+
+  /// Likes a post.
+  @override
+  Future<void> like(Post post) async {
+    await likePost(_uriOf(post), await _cidOf(post));
+  }
+
+  /// Removes a like.
+  @override
+  Future<void> unlike(Post post) async {
+    await unlikePost(await _likeUriOf(post));
+  }
+
+  /// Reposts a post.
+  @override
+  Future<void> repost(Post post) async {
+    await repostPost(_uriOf(post), await _cidOf(post));
+  }
+
+  /// Removes a repost.
+  @override
+  Future<void> unrepost(Post post) async {
+    await unrepostPost(await _repostUriOf(post));
+  }
+
+  /// Replies to a post.
+  @override
+  Future<void> commentOn(Post post, String text) async {
+    final String uri = _uriOf(post);
+    await reply(uri, await _cidOf(post), text);
+  }
+
+  /// The replies to a post (the thread's replies).
+  @override
+  Future<List<Post>> fetchComments(Post post) async {
+    final BlueskyThreadPost thread = await fetchThread(_uriOf(post));
+    return thread.replies
+        .map((BlueskyThreadPost reply) => _threadPostToPost(reply.post))
+        .toList();
   }
 
   /// Starts the login flow. Bluesky login needs a handle and an
