@@ -43,6 +43,14 @@ void main() {
           expect(adapter.status, PlatformStatus.ready);
           expect(adapter.requiresLogin, isFalse);
           expect(await adapter.isLoggedIn, isFalse);
+        case 'youtube':
+          // YouTube is implemented (Data API v3) but limited by
+          // quota. Guests get the most popular chart and search
+          // needs an API key, so the timeline is not fetched
+          // here — see youtube_adapter_test.dart.
+          expect(adapter.status, PlatformStatus.limited);
+          expect(adapter.requiresLogin, isFalse);
+          expect(await adapter.isLoggedIn, isFalse);
         default:
           expect(adapter.status, PlatformStatus.planned);
           expect(await adapter.fetchTimeline(), isEmpty);
