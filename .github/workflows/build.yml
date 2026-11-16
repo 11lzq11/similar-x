@@ -105,7 +105,7 @@ jobs:
       - run: flutter build macos --release
       - run: |
           hdiutil create -volname "Similar-X" \
-            -srcfolder "build/macos/Build/Products/Release/Similar-X.app" \
+            -srcfolder "build/macos/Build/Products/Release/similar_x.app" \
             -ov -format UDZO "Similar-X-macOS.dmg"
       - uses: actions/upload-artifact@v4
         with:
