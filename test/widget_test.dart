@@ -36,6 +36,13 @@ void main() {
           expect(adapter.status, PlatformStatus.ready);
           expect(adapter.requiresLogin, isFalse);
           expect(await adapter.isLoggedIn, isFalse);
+        case 'bluesky':
+          // Bluesky is implemented (AT Protocol). Guests get the
+          // Discover feed, which needs the network, so it is not
+          // fetched here — see bluesky_adapter_test.dart.
+          expect(adapter.status, PlatformStatus.ready);
+          expect(adapter.requiresLogin, isFalse);
+          expect(await adapter.isLoggedIn, isFalse);
         default:
           expect(adapter.status, PlatformStatus.planned);
           expect(await adapter.fetchTimeline(), isEmpty);

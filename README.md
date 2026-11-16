@@ -31,8 +31,8 @@ platforms get a WebView fallback or are cut.
 | Platform / 平台 | Status / 状态 | Shape / 形态 |
 |---|---|---|
 | Telegram | ✅ Implemented / 已实现 | Full client via MTProto + TDLib (free, no approval) |
-| Mastodon | ✅ Fully feasible / 完全可行 | Full client, open REST + Streaming API |
-| Bluesky | ✅ Fully feasible / 完全可行 | Full client, AT Protocol, public read without login |
+| Mastodon | ✅ Implemented / 已实现 | Full client, open REST + OAuth (PKCE) |
+| Bluesky | ✅ Implemented / 已实现 | Full client, AT Protocol, App Password login, public read without login |
 | YouTube | ⚠️ Limited / 有限 | Official Data API (10k units/day) + InnerTube fallback |
 | Reddit | ⚠️ Limited / 有限 | Free tier 100/min OAuth; manual approval required |
 | Threads | ⚠️ Limited / 有限 | Own account only — post + manage, no public timeline |
@@ -138,10 +138,24 @@ on-device (flutter_secure_storage). Then log in with your phone number
 + the code Telegram sends you; the session is kept in TDLib's local
 database, encrypted with a per-install random key.
 
+## Bluesky setup / Bluesky 接入说明
+
+Bluesky uses the open [AT Protocol](https://atproto.com) — no app
+registration, no approval, no quota. Public content is readable
+without login (the Discover feed); writes need a session.
+
+**Login / 登录** — enter your handle (e.g. `alice.bsky.social`)
+and an **App Password**, made at Bluesky Settings > Privacy and
+security > App passwords. Never use your account password here.
+The session (access + refresh JWT) is stored encrypted on-device;
+the access token is refreshed automatically when it expires
+(about two hours). Most accounts live on `bsky.social`; users on
+another PDS can change the service host in settings.
+
 ## Roadmap / 路线图
 
 - [x] v0.1.0 — scaffold: app shell, locales, adapter registry, CI
-- [ ] v0.2.0 — Mastodon + Bluesky timelines (REST, guest-first)
+- [x] v0.2.0 — Mastodon (REST + OAuth) + Bluesky (AT Protocol + App Password): timelines, post, like, repost, notifications, guest-first
 - [x] v0.3.0 — Telegram via TDLib (FFI), login + chat list + messages
 - [ ] v0.4.0 — unified timeline, posting, likes, comments
 - [ ] v0.5.0 — YouTube / Reddit / Threads (limited tiers), WebView tab
