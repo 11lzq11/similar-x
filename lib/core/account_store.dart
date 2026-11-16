@@ -29,4 +29,15 @@ class AccountStore {
 
   /// Deletes every stored token (log out of everything).
   Future<void> deleteAll() => _storage.deleteAll();
+
+  /// Generic encrypted key/value storage for per-platform settings that
+  /// are not OAuth tokens — e.g. Telegram's api_id/api_hash and its
+  /// database encryption key. Same encrypted storage, same rules: the
+  /// value never leaves the device.
+  Future<void> saveValue(String key, String value) =>
+      _storage.write(key: key, value: value);
+
+  Future<String?> readValue(String key) => _storage.read(key: key);
+
+  Future<void> deleteValue(String key) => _storage.delete(key: key);
 }

@@ -100,6 +100,17 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
+# TDLib native library (fetched by scripts/fetch_tdlib.py --platform
+# linux; never committed). Installed into the bundle's lib/ directory,
+# which the executable's $ORIGIN/lib RPATH covers at runtime.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libtdjson.so")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/libtdjson.so"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+else()
+  message(WARNING "libtdjson.so not found — run scripts/fetch_tdlib.py --platform linux; Telegram will be unavailable.")
+endif()
+
 foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
   install(FILES "${bundled_library}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"

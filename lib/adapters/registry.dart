@@ -18,10 +18,11 @@ import 'youtube_adapter.dart';
 ///
 /// Adapters are cheap to construct and do no I/O until used, so the
 /// registry is a plain list for now. Lazy loading per adapter lands
-/// with the first real API client.
-List<PlatformAdapter> buildAdapterRegistry() => const <PlatformAdapter>[
+/// with the first real API client. The list is not const: adapters
+/// with real clients (Telegram) hold runtime dependencies.
+List<PlatformAdapter> buildAdapterRegistry() => <PlatformAdapter>[
       TelegramAdapter(),
-      MastodonAdapter(),
+      const MastodonAdapter(),
       BlueskyAdapter(),
       YouTubeAdapter(),
       RedditAdapter(),

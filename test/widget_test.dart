@@ -19,9 +19,16 @@ void main() {
     }
   });
 
-  test('every registered adapter is a stub for now', () async {
+  test('every registered adapter is a stub for now, except Telegram',
+      () async {
     for (final PlatformAdapter adapter in buildAdapterRegistry()) {
-      expect(adapter.status, PlatformStatus.planned);
+      if (adapter.id == 'telegram') {
+        // Telegram is implemented (TDLib); it is limited, not planned.
+        // Logged out it still behaves like a guest: empty timeline.
+        expect(adapter.status, PlatformStatus.limited);
+      } else {
+        expect(adapter.status, PlatformStatus.planned);
+      }
       expect(await adapter.fetchTimeline(), isEmpty);
       expect(await adapter.isLoggedIn, isFalse);
     }

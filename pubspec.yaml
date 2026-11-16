@@ -25,8 +25,15 @@ dependencies:
   # leave the device and are never sent to a Similar-X server (there is none).
   flutter_secure_storage: ^9.2.4
   # REST/JSON clients (Mastodon, Bluesky/AT Protocol, Threads, Reddit,
-  # YouTube Data API). Telegram uses TDLib over FFI (future work).
+  # YouTube Data API). Telegram uses TDLib over FFI (see
+  # lib/adapters/telegram/).
   http: ^1.2.2
+  # Dart FFI helpers for the TDLib JSON interface (libtdjson). The native
+  # library is NOT committed to the repo: scripts/fetch_tdlib.py downloads
+  # the pinned prebuilt libtdjson per platform at build time.
+  ffi: ^2.1.4
+  # App documents directory for TDLib's own database (auth session, chats).
+  path_provider: ^2.1.5
   intl: ^0.20.2
   # WebView fallback for closed platforms (X, Instagram, Facebook, Discord):
   # the official mobile web is embedded; the login stays inside the WebView

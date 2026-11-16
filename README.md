@@ -30,7 +30,7 @@ platforms get a WebView fallback or are cut.
 
 | Platform / 平台 | Status / 状态 | Shape / 形态 |
 |---|---|---|
-| Telegram | ✅ Fully feasible / 完全可行 | Full client via MTProto + TDLib (free, no approval) |
+| Telegram | ✅ Implemented / 已实现 | Full client via MTProto + TDLib (free, no approval) |
 | Mastodon | ✅ Fully feasible / 完全可行 | Full client, open REST + Streaming API |
 | Bluesky | ✅ Fully feasible / 完全可行 | Full client, AT Protocol, public read without login |
 | YouTube | ⚠️ Limited / 有限 | Official Data API (10k units/day) + InnerTube fallback |
@@ -54,7 +54,7 @@ lib/
     app_state.dart          # Adapter registry + locale state
   adapters/
     registry.dart           # Launch-priority adapter list
-    telegram_adapter.dart   # Tier 1: MTProto + TDLib (FFI, future)
+    telegram_adapter.dart   # Tier 1: MTProto + TDLib (FFI, implemented)
     mastodon_adapter.dart   # Tier 1: REST + Streaming API
     bluesky_adapter.dart    # Tier 1: AT Protocol
     youtube_adapter.dart    # Tier 2: Data API v3
@@ -104,11 +104,45 @@ flutter build ipa --no-codesign   # unsigned IPA
 
 Requires Flutter 3.50.0 (stable) or newer.
 
+## Telegram setup / Telegram 接入说明
+
+Telegram is the first fully implemented adapter. It uses
+[TDLib](https://github.com/tdlib/td) (the official Telegram client
+library) through a thin Dart FFI layer — no third-party TDLib package
+(the ones on pub.dev don't cover all five platforms).
+
+**Native library / 原生库** — the prebuilt `libtdjson` (~13–22 MB per
+platform, TDLib 1.8.69) is **not** committed to this repo. Fetch it
+before building a platform target; CI does this automatically:
+
+```sh
+python3 scripts/fetch_tdlib.py --platform android   # all 3 ABIs
+python3 scripts/fetch_tdlib.py --platform ios       # XCFramework
+python3 scripts/fetch_tdlib.py --platform macos     # .dylib
+python3 scripts/fetch_tdlib.py --platform windows   # .dll
+python3 scripts/fetch_tdlib.py --platform linux     # .so
+```
+
+Downloads are SHA-256 verified against `scripts/tdjson-manifest.json`
+(pinned Mithka `mithka-tdjson` release). Already-correct targets are
+skipped, so re-running is cheap.
+
+**API credentials / API 凭证** — TDLib needs an `api_id` and
+`api_hash`, which identify the *application* (one per Similar-X
+install). Get them free from
+[my.telegram.org](https://my.telegram.org) (log in with your phone
+number → **API development tools** → create an app; the values are
+yours, never shared). Enter them in the app's Telegram settings — the
+app never ships a pooled key, and the credentials are stored encrypted
+on-device (flutter_secure_storage). Then log in with your phone number
++ the code Telegram sends you; the session is kept in TDLib's local
+database, encrypted with a per-install random key.
+
 ## Roadmap / 路线图
 
 - [x] v0.1.0 — scaffold: app shell, locales, adapter registry, CI
 - [ ] v0.2.0 — Mastodon + Bluesky timelines (REST, guest-first)
-- [ ] v0.3.0 — Telegram via TDLib (FFI), login + chat list
+- [x] v0.3.0 — Telegram via TDLib (FFI), login + chat list + messages
 - [ ] v0.4.0 — unified timeline, posting, likes, comments
 - [ ] v0.5.0 — YouTube / Reddit / Threads (limited tiers), WebView tab
 
