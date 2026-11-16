@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../adapters/webview_adapter.dart';
 import '../core/app_localizations.dart';
 import '../core/app_state.dart';
 import '../core/platform_adapter.dart';
@@ -68,9 +69,15 @@ class HomeScreen extends StatelessWidget {
                   ),
                   trailing: _StatusChip(status: adapter.status),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.comingSoon)),
-                    );
+                    if (adapter is WebViewAdapter) {
+                      // WebView platforms open their embedded mobile
+                      // web; every other adapter is still a stub.
+                      adapter.openWebView(context);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.comingSoon)),
+                      );
+                    }
                   },
                 );
               },

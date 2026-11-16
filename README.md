@@ -36,9 +36,9 @@ platforms get a WebView fallback or are cut.
 | YouTube | ⚠️ Limited / 有限 | Official Data API (10k units/day) + InnerTube fallback |
 | Reddit | ⚠️ Limited / 有限 | Implemented — Data API OAuth (own installed app); free tier 100/min; manual approval needed since Nov 2025 |
 | Threads | ⚠️ Limited / 有限 | Implemented — Threads API OAuth (own Meta app); own threads, post/reply/quote/repost, mentions, keyword search (500/7 days), insights. No public timeline; the official API has no like endpoint |
-| X | 🔴 WebView only / 仅网页版 | Pay-per-read API + ToS bans replacement clients |
-| Instagram | 🔴 WebView only / 仅网页版 | No personal-account API (Basic Display closed 2024) |
-| Facebook | 🔴 WebView only / 仅网页版 | Graph API covers Pages only |
+| X | ✅ WebView / 网页版已实现 | Implemented — official mobile web in-app (WebView); login inside the WebView, no token stored; timeline/likes/comments through the website, no native feed. Pay-per-read API + ToS bans replacement clients |
+| Instagram | ✅ WebView / 网页版已实现 | Implemented — official mobile web in-app (WebView); login inside the WebView, no token stored; no native feed. No personal-account API (Basic Display closed 2024) |
+| Facebook | ✅ WebView / 网页版已实现 | Implemented — official mobile web in-app (WebView); login inside the WebView, no token stored; no native feed. Graph API covers Pages only |
 | Discord | ❌ Cut / 砍掉 | User-token automation is banned by ToS |
 | TikTok | ❌ Cut / 砍掉 | No public feed API |
 
@@ -66,9 +66,12 @@ lib/
     threads/
       threads_client.dart   # Threads API: OAuth, container + publish, repost, insights
       threads_models.dart   # Post / User / Tokens / Insights / PublishingLimit
-    webview_adapter.dart    # Tier 3: X / Instagram / Facebook
+    webview_adapter.dart    # Tier 3: X / Instagram / Facebook (WebView fallback)
+    webview/
+      webview_session.dart  # URL routing + login-state detection (pure Dart)
   screens/
     home_screen.dart        # Platform list (unified timeline lands later)
+    platform_webview_screen.dart  # In-app WebView: nav controls + login indicator
 ```
 
 Design rules:
@@ -164,7 +167,7 @@ another PDS can change the service host in settings.
 - [x] v0.2.0 — Mastodon (REST + OAuth) + Bluesky (AT Protocol + App Password): timelines, post, like, repost, notifications, guest-first
 - [x] v0.3.0 — Telegram via TDLib (FFI), login + chat list + messages
 - [ ] v0.4.0 — unified timeline, posting, likes, comments
-- [ ] v0.5.0 — YouTube ✅ / Reddit ✅ / Threads (limited tiers), WebView tab
+- [x] v0.5.0 — YouTube ✅ / Reddit ✅ / Threads ✅ / WebView ✅ (limited tiers + WebView fallback for X / Instagram / Facebook)
 
 ## Contributing / 参与
 

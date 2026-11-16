@@ -67,6 +67,49 @@ class AppLocalizations {
       'en': 'Switch language',
       'zh': '切换语言',
     },
+    'webViewDisclaimer': {
+      'en':
+          'You are browsing {platform}’s mobile website inside Similar-X. Timeline, likes and comments work through the website — there is no native feed for this platform.',
+      'zh':
+          '你正在 Similar-X 内浏览 {platform} 的手机网页版。时间线、点赞和评论都在网页里完成——该平台没有原生信息流。',
+    },
+    'webViewLoggedIn': {
+      'en': 'Logged in',
+      'zh': '已登录',
+    },
+    'webViewGuest': {
+      'en': 'Guest',
+      'zh': '游客',
+    },
+    'webViewUnknown': {
+      'en': 'Unknown',
+      'zh': '未知',
+    },
+    'webViewNotAvailable': {
+      'en':
+          'WebView is not available here yet — on Windows and Linux it needs a community WebView plugin.',
+      'zh': '这里暂不支持网页视图——Windows 和 Linux 需要社区的 WebView 插件。',
+    },
+    'webViewLogout': {
+      'en': 'Log out',
+      'zh': '退出登录',
+    },
+    'webViewReload': {
+      'en': 'Reload',
+      'zh': '重新加载',
+    },
+    'webViewBack': {
+      'en': 'Back',
+      'zh': '后退',
+    },
+    'webViewForward': {
+      'en': 'Forward',
+      'zh': '前进',
+    },
+    'webViewExternalBlocked': {
+      'en': 'External links stay outside the app.',
+      'zh': '外部链接不会在应用内打开。',
+    },
   };
 
   String _t(String key) {
@@ -81,6 +124,19 @@ class AppLocalizations {
   String get comingSoon => _t('comingSoon');
   String get guestMode => _t('guestMode');
   String get switchLanguage => _t('switchLanguage');
+  String get webViewLoggedIn => _t('webViewLoggedIn');
+  String get webViewGuest => _t('webViewGuest');
+  String get webViewUnknown => _t('webViewUnknown');
+  String get webViewNotAvailable => _t('webViewNotAvailable');
+  String get webViewLogout => _t('webViewLogout');
+  String get webViewReload => _t('webViewReload');
+  String get webViewBack => _t('webViewBack');
+  String get webViewForward => _t('webViewForward');
+  String get webViewExternalBlocked => _t('webViewExternalBlocked');
+
+  /// The WebView disclaimer with the platform name filled in.
+  String webViewDisclaimerFor(String platform) =>
+      _t('webViewDisclaimer').replaceAll('{platform}', platform);
 
   String statusLabel(PlatformStatus status) {
     switch (status) {

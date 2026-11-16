@@ -69,6 +69,17 @@ void main() {
           expect(adapter.requiresLogin, isTrue);
           expect(await adapter.fetchTimeline(), isEmpty);
           expect(await adapter.isLoggedIn, isFalse);
+        case 'webview_x':
+        case 'webview_instagram':
+        case 'webview_facebook':
+          // WebView fallback: the official mobile web runs in-app,
+          // login stays in the WebView, no native feed — see
+          // webview_adapter_test.dart.
+          expect(adapter.status, PlatformStatus.webview);
+          expect(adapter.requiresLogin, isFalse);
+          expect(adapter.capabilities, isEmpty);
+          expect(await adapter.fetchTimeline(), isEmpty);
+          expect(await adapter.isLoggedIn, isFalse);
         default:
           expect(adapter.status, PlatformStatus.planned);
           expect(await adapter.fetchTimeline(), isEmpty);

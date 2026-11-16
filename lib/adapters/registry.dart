@@ -4,6 +4,7 @@ import 'mastodon_adapter.dart';
 import 'reddit_adapter.dart';
 import 'telegram_adapter.dart';
 import 'threads_adapter.dart';
+import 'webview/webview_session.dart';
 import 'webview_adapter.dart';
 import 'youtube_adapter.dart';
 
@@ -27,19 +28,7 @@ List<PlatformAdapter> buildAdapterRegistry() => <PlatformAdapter>[
       YouTubeAdapter(),
       RedditAdapter(),
       ThreadsAdapter(),
-      WebViewAdapter(
-        platformId: 'x',
-        platformName: 'X',
-        mobileWebUrl: 'https://x.com/',
-      ),
-      WebViewAdapter(
-        platformId: 'instagram',
-        platformName: 'Instagram',
-        mobileWebUrl: 'https://www.instagram.com/',
-      ),
-      WebViewAdapter(
-        platformId: 'facebook',
-        platformName: 'Facebook',
-        mobileWebUrl: 'https://m.facebook.com/',
-      ),
+      WebViewAdapter(config: xWebViewConfig),
+      WebViewAdapter(config: instagramWebViewConfig),
+      WebViewAdapter(config: facebookWebViewConfig),
     ];
