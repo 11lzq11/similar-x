@@ -1,0 +1,25 @@
+# Similar-X launcher icon configuration (flutter_launcher_icons 0.14.x).
+# Source: assets/icon/similar-x-icon.png (1024x1024, generated artwork:
+# four white chat bubbles whose negative space forms an X, on an
+# indigo -> violet -> fuchsia gradient).
+# Run: dart run flutter_launcher_icons
+# Note: flutter_launcher_icons 0.14.x does NOT support Linux; the Linux
+# icons are generated manually (see scripts/make_linux_icons.py) into the
+# freedesktop hicolor layout under linux/icons/ plus a .desktop file.
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon/similar-x-icon.png"
+  # Android adaptive icon: the source image is fully opaque, so the
+  # background is only a fallback; indigo matches the gradient's dark end.
+  # inset 0 because the source artwork already has ~20% margins built in.
+  adaptive_icon_background: "#2E1065"
+  adaptive_icon_foreground: "assets/icon/similar-x-icon.png"
+  adaptive_icon_foreground_inset: 0
+  macos:
+    generate: true
+    image_path: "assets/icon/similar-x-icon.png"
+  windows:
+    generate: true
+    image_path: "assets/icon/similar-x-icon.png"
+    icon_size: 48

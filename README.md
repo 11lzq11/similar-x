@@ -22,6 +22,25 @@ Similar-X 是一个模块化的全端社交聚合器：每个社交平台对应�
 > 能编译运行。每个适配器目前还是占位实现，等各自的 API 客户端接
 > 入——这是地基，不是成品。
 
+## Icon / 图标
+
+![Similar-X icon](assets/icon/similar-x-icon.png)
+
+Four white chat bubbles whose negative space forms an **X** — many
+social apps, one app — on an indigo → violet → fuchsia gradient.
+The source artwork is `assets/icon/similar-x-icon.png` (1024×1024);
+launcher icons are generated for Android, iOS, macOS and Windows with
+`dart run flutter_launcher_icons` (see `flutter_launcher_icons.yaml`),
+and for Linux with `python3 scripts/make_linux_icons.py` (freedesktop
+hicolor icons + `linux/similar-x.desktop`).
+
+四个白色聊天气泡，留白拼成一个 **X**——许多社交应用，一个应用——
+背景是靛蓝 → 紫 → 品红渐变。源图在 `assets/icon/similar-x-icon.png`
+（1024×1024）；Android、iOS、macOS、Windows 的启动图标用
+`dart run flutter_launcher_icons` 生成（见 `flutter_launcher_icons.yaml`），
+Linux 的用 `python3 scripts/make_linux_icons.py` 生成（freedesktop
+hicolor 图标 + `linux/similar-x.desktop`）。
+
 ## Platform status / 平台接入状态
 
 Based on `research/third-party-feasibility.md` (2026-11-16). Reality

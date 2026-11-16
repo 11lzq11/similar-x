@@ -49,6 +49,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Generates the launcher icon for Android, iOS, macOS, Windows and Linux
+  # from assets/icon/similar-x-icon.png (see flutter_launcher_icons.yaml).
+  flutter_launcher_icons: ^0.14.4
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
