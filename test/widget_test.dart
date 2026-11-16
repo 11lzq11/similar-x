@@ -60,6 +60,15 @@ void main() {
           expect(adapter.status, PlatformStatus.limited);
           expect(adapter.requiresLogin, isFalse);
           expect(await adapter.isLoggedIn, isFalse);
+        case 'threads':
+          // Threads is implemented (Threads API) but limited
+          // to the account's own content and requires login.
+          // Guests get an empty timeline, never fake data —
+          // see threads_adapter_test.dart.
+          expect(adapter.status, PlatformStatus.limited);
+          expect(adapter.requiresLogin, isTrue);
+          expect(await adapter.fetchTimeline(), isEmpty);
+          expect(await adapter.isLoggedIn, isFalse);
         default:
           expect(adapter.status, PlatformStatus.planned);
           expect(await adapter.fetchTimeline(), isEmpty);

@@ -35,7 +35,7 @@ platforms get a WebView fallback or are cut.
 | Bluesky | ✅ Implemented / 已实现 | Full client, AT Protocol, App Password login, public read without login |
 | YouTube | ⚠️ Limited / 有限 | Official Data API (10k units/day) + InnerTube fallback |
 | Reddit | ⚠️ Limited / 有限 | Implemented — Data API OAuth (own installed app); free tier 100/min; manual approval needed since Nov 2025 |
-| Threads | ⚠️ Limited / 有限 | Own account only — post + manage, no public timeline |
+| Threads | ⚠️ Limited / 有限 | Implemented — Threads API OAuth (own Meta app); own threads, post/reply/quote/repost, mentions, keyword search (500/7 days), insights. No public timeline; the official API has no like endpoint |
 | X | 🔴 WebView only / 仅网页版 | Pay-per-read API + ToS bans replacement clients |
 | Instagram | 🔴 WebView only / 仅网页版 | No personal-account API (Basic Display closed 2024) |
 | Facebook | 🔴 WebView only / 仅网页版 | Graph API covers Pages only |
@@ -63,6 +63,9 @@ lib/
       reddit_client.dart    # Data API: OAuth PKCE + app-only guest token
       reddit_models.dart    # Post / Comment / Subreddit / Message
     threads_adapter.dart    # Tier 2: Threads API (own account)
+    threads/
+      threads_client.dart   # Threads API: OAuth, container + publish, repost, insights
+      threads_models.dart   # Post / User / Tokens / Insights / PublishingLimit
     webview_adapter.dart    # Tier 3: X / Instagram / Facebook
   screens/
     home_screen.dart        # Platform list (unified timeline lands later)
