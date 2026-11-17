@@ -19,6 +19,13 @@ jobs:
           flutter-version: '3.50.0'
           channel: stable
       - run: flutter pub get
+      # The nested engine package's dev_dependencies (package:test, used
+      # by its ffi test) are NOT installed by a root `flutter pub get` —
+      # path dependencies' dev_dependencies are only resolved when you
+      # run pub get inside that package. Without this, analyze fails
+      # with "Target of URI doesn't exist: 'package:test/test.dart'".
+      - run: flutter pub get
+        working-directory: packages/tinytrainer_engine
       - run: flutter analyze
 
   test:
@@ -26,11 +33,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Native assets build (hook/build.dart) compiles the C engine with
+      # -fopenmp. The toolchain picks Clang, whose -fopenmp links libomp
+      # (-lomp) — not installed on the runner by default. Install it.
+      - run: sudo apt-get update && sudo apt-get install -y libomp-dev
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.50.0'
           channel: stable
       - run: flutter pub get
+      - run: flutter pub get
+        working-directory: packages/tinytrainer_engine
       - run: flutter test
 
   build-android:
@@ -123,7 +136,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
+      # libsecret (flutter_secure_storage) + libomp (native assets build
+      # compiles the C engine with -fopenmp; Clang links -lomp).
+      - run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev libomp-dev
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.50.0'
