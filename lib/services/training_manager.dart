@@ -21,6 +21,7 @@ import 'package:tinytrainer_engine/tinytrainer_engine.dart';
 
 import '../engine/engine_backend.dart';
 import '../engine/engine_worker.dart';
+import '../engine/direct_engine_backend.dart';
 import '../l10n/strings.dart';
 import '../models.dart';
 
@@ -108,9 +109,12 @@ class TrainingManager extends ChangeNotifier {
       try {
         _backend = await EngineWorker.spawn();
       } catch (e) {
-        _message = '引擎启动失败：$e';
+        // Worker isolate unusable on this device: fall back to running the
+        // engine on the main isolate (training chunks block the UI briefly,
+        // but the app works). The exact cause is kept for diagnostics.
+        _backend = DirectEngineBackend();
+        _message = '后台引擎启动失败，已切换到主线程引擎：$e';
         notifyListeners();
-        return;
       }
     }
     try {
@@ -164,7 +168,7 @@ class TrainingManager extends ChangeNotifier {
       _postMessage('超参数超出范围，请检查后重试');
       return false;
     }
-    final backend = await _requireBackend();
+    var backend = await _requireBackend();
     if (backend == null) {
       // _requireBackend() only returns null when the engine worker failed
       // to spawn; ensureReady() already posted '引擎启动失败：…' in that
@@ -173,9 +177,25 @@ class TrainingManager extends ChangeNotifier {
       if (_message == null) _postMessage('引擎未就绪，请稍候再试');
       return false;
     }
-    final ok = await backend.create(config);
+    var ok = await backend.create(config);
+    if (!ok && backend is EngineWorker) {
+      // The worker isolate's create failed on this device (the C engine
+      // itself is fine — the same code passes on the main isolate). Swap
+      // to the direct backend and retry once, instead of leaving the user
+      // with a dead "创建大脑失败".
+      await backend.dispose();
+      final direct = DirectEngineBackend();
+      _backend = direct;
+      backend = direct;
+      ok = await backend.create(config);
+    }
     if (!ok) {
-      _postMessage('创建大脑失败');
+      final detail = backend is DirectEngineBackend
+          ? (backend.lastError ?? '')
+          : '';
+      _postMessage(
+        detail.isEmpty ? '创建大脑失败' : '创建大脑失败：$detail',
+      );
       return false;
     }
     _config = config;
