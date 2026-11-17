@@ -56,6 +56,7 @@ void main(List<String> args) async {
       output: output,
       logger: Logger('')
         ..level = Level.ALL
+        // ignore: avoid_print
         ..onRecord.listen((record) => print(record.message)),
     );
   });

@@ -127,14 +127,31 @@ void _engineWorkerMain(SendPort mainSendPort) {
 /// Main-isolate handle for the engine worker isolate.
 class EngineWorker implements EngineBackend {
   final Isolate _isolate;
-  final SendPort _workerPort;
   final ReceivePort _receivePort;
   final Map<int, Completer<Map<String, dynamic>>> _pending = {};
   int _nextId = 1;
   bool _disposed = false;
 
-  EngineWorker._(this._isolate, this._workerPort, this._receivePort) {
+  /// Set by the single stream listener when the worker sends its SendPort
+  /// (the first message). Kept as a late field because the worker is only
+  /// usable once [spawn] has awaited [_ready].
+  late final SendPort _workerPort;
+  final Completer<void> _ready = Completer<void>();
+
+  EngineWorker._(this._isolate, this._receivePort) {
+    // ONE listener for the whole lifetime of the port. The first message
+    // is the worker isolate's SendPort; every later message is a command
+    // response. (Calling receivePort.first and then .listen() throws
+    // "Bad state: Stream has already been listened to" — ReceivePort's
+    // stream is single-subscription.)
+    var first = true;
     _receivePort.listen((dynamic message) {
+      if (first) {
+        first = false;
+        _workerPort = message as SendPort;
+        _ready.complete();
+        return;
+      }
       final resp = message as Map<String, dynamic>;
       final id = resp['id'] as int;
       final completer = _pending.remove(id);
@@ -147,8 +164,9 @@ class EngineWorker implements EngineBackend {
   static Future<EngineWorker> spawn() async {
     final receivePort = ReceivePort();
     final isolate = await Isolate.spawn(_engineWorkerMain, receivePort.sendPort);
-    final workerPort = await receivePort.first as SendPort;
-    return EngineWorker._(isolate, workerPort, receivePort);
+    final worker = EngineWorker._(isolate, receivePort);
+    await worker._ready.future;
+    return worker;
   }
 
   Future<Map<String, dynamic>> _send(Map<String, dynamic> cmd) {

@@ -37,7 +37,7 @@ class TrainingManager extends ChangeNotifier {
 
   /// The app documents directory (injected in tests to avoid path_provider).
   Future<Directory> _appDir() async {
-    if (_injectedDocumentsDir != null) return _injectedDocumentsDir!;
+    if (_injectedDocumentsDir != null) return _injectedDocumentsDir;
     return getApplicationDocumentsDirectory();
   }
 
@@ -65,6 +65,7 @@ class TrainingManager extends ChangeNotifier {
   String? get message => _message;
 
   bool _initialised = false;
+  bool _disposed = false;
   int _totalTokens = 0;
   int _elapsedMs = 0;
   bool _stopRequested = false;
@@ -113,8 +114,20 @@ class TrainingManager extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _backend?.dispose();
     super.dispose();
+  }
+
+  // ensureReady() and the training loop are fire-and-forget async work:
+  // they keep calling notifyListeners() after awaits. If the widget tree
+  // is disposed first (e.g. a test ending), those calls would throw
+  // "used after being disposed". Swallow them — a disposed manager has
+  // no listeners left to inform.
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
   }
 
   void _postMessage(String msg) {
