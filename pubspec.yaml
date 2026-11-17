@@ -1,104 +1,36 @@
-name: similar_x
-description: "Similar-X — one app for every social network. A modular multi-platform social media aggregator: Telegram, Mastodon, Bluesky and more, with a WebView fallback for closed platforms."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+name: tiny_trainer
+description: "TinyTrainer — train a tiny Transformer on your phone or PC. Flutter cross-platform version."
+publish_to: 'none'
 
 version: 0.1.0+1
 
 environment:
   sdk: ^3.14.0
+  flutter: '>=3.3.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-
-  # State management (lightweight; adapters expose ChangeNotifier state).
-  provider: ^6.1.5
-  # Encrypted on-device storage for per-platform OAuth tokens. Tokens never
-  # leave the device and are never sent to a Similar-X server (there is none).
-  flutter_secure_storage: ^9.2.4
-  # REST/JSON clients (Mastodon, Bluesky/AT Protocol, Threads, Reddit,
-  # YouTube Data API). Telegram uses TDLib over FFI (see
-  # lib/adapters/telegram/).
-  http: ^1.2.2
-  # SHA-256 for OAuth PKCE (Mastodon login code challenge).
-  crypto: ^3.0.8
-  # Dart FFI helpers for the TDLib JSON interface (libtdjson). The native
-  # library is NOT committed to the repo: scripts/fetch_tdlib.py downloads
-  # the pinned prebuilt libtdjson per platform at build time.
-  ffi: ^2.1.4
-  # App documents directory for TDLib's own database (auth session, chats).
+  # The C training engine (dart:ffi, native assets).
+  tinytrainer_engine:
+    path: packages/tinytrainer_engine
+  # Pick corpus .txt / .brain files on every platform.
+  file_picker: ^10.3.0
+  # App documents directory (corpus + brain storage).
   path_provider: ^2.1.5
-  intl: ^0.20.2
-  # Opens OAuth authorize URLs in the system browser during login
-  # (Mastodon, YouTube, Reddit, Threads).
-  url_launcher: ^6.3.1
-  # WebView fallback for closed platforms (X, Instagram, Facebook, Discord):
-  # the official mobile web is embedded; the login stays inside the WebView
-  # and no user token is ever touched. Desktop WebView support is limited;
-  # see lib/adapters/webview_adapter.dart.
-  webview_flutter: ^4.10.0
-  material_ui: ^1.11.0
-  cupertino_ui: ^1.1.6
+  # Persist the active-corpus list and last-used settings.
+  shared_preferences: ^2.5.0
+  material_ui: ^1.11.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # Generates the launcher icon for Android, iOS, macOS, Windows and Linux
-  # from assets/icon/similar-x-icon.png (see flutter_launcher_icons.yaml).
-  flutter_launcher_icons: ^0.14.4
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
-
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+  assets:
+    # Bundled base brain. The first release ships a placeholder text file
+    # (not a real .brain); the app detects that and tells the user.
+    # The real pre-trained base.brain replaces this file later.
+    - assets/base.brain

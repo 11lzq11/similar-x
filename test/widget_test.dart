@@ -1,117 +1,111 @@
-// Similar-X v0.1.0 tests: adapter registry invariants + app smoke test.
+// Widget tests: the three tabs render with a fake backend, and the tab
+// bar switches pages. Uses a temp documents dir + mocked preferences.
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
-import 'package:similar_x/adapters/registry.dart';
-import 'package:similar_x/core/app_state.dart';
-import 'package:similar_x/core/platform_adapter.dart';
-import 'package:similar_x/main.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tiny_trainer/l10n/strings.dart';
+import 'package:tiny_trainer/main.dart';
+import 'package:tiny_trainer/services/training_manager.dart';
+import 'package:tiny_trainer/ui/brain_page.dart';
+import 'package:tiny_trainer/ui/chat_page.dart';
+import 'package:tiny_trainer/ui/train_page.dart';
 
-import 'fake_adapter.dart';
+import 'fake_engine_backend.dart';
 
 void main() {
-  test('adapter registry has unique ids and names', () {
-    final List<PlatformAdapter> adapters = buildAdapterRegistry();
-    expect(adapters, isNotEmpty);
-    final Set<String> ids = adapters.map((a) => a.id).toSet();
-    expect(ids.length, adapters.length, reason: 'adapter ids must be unique');
-    for (final PlatformAdapter adapter in adapters) {
-      expect(adapter.displayName, isNotEmpty);
-      expect(adapter.id, isNotEmpty);
-    }
+  late Directory tmpDir;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    tmpDir = await Directory.systemTemp.createTemp('tiny_trainer_widget_test');
   });
 
-  test('implemented adapters report their real status', () async {
-    for (final PlatformAdapter adapter in buildAdapterRegistry()) {
-      switch (adapter.id) {
-        case 'telegram':
-          // Telegram is implemented (TDLib); it is limited, not planned.
-          // Logged out it still behaves like a guest: empty timeline.
-          expect(adapter.status, PlatformStatus.limited);
-          expect(await adapter.fetchTimeline(), isEmpty);
-          expect(await adapter.isLoggedIn, isFalse);
-        case 'mastodon':
-          // Mastodon is implemented (REST). Guests get the public
-          // timeline, which needs the network, so it is not fetched
-          // here — see mastodon_adapter_test.dart.
-          expect(adapter.status, PlatformStatus.ready);
-          expect(adapter.requiresLogin, isFalse);
-          expect(await adapter.isLoggedIn, isFalse);
-        case 'bluesky':
-          // Bluesky is implemented (AT Protocol). Guests get the
-          // Discover feed, which needs the network, so it is not
-          // fetched here — see bluesky_adapter_test.dart.
-          expect(adapter.status, PlatformStatus.ready);
-          expect(adapter.requiresLogin, isFalse);
-          expect(await adapter.isLoggedIn, isFalse);
-        case 'youtube':
-          // YouTube is implemented (Data API v3) but limited by
-          // quota. Guests get the most popular chart and search
-          // needs an API key, so the timeline is not fetched
-          // here — see youtube_adapter_test.dart.
-          expect(adapter.status, PlatformStatus.limited);
-          expect(adapter.requiresLogin, isFalse);
-          expect(await adapter.isLoggedIn, isFalse);
-        case 'reddit':
-          // Reddit is implemented (Data API OAuth) but limited
-          // by the free tier and the manual-approval gate.
-          // Guests get r/popular, which needs the network, so
-          // the timeline is not fetched here — see
-          // reddit_adapter_test.dart.
-          expect(adapter.status, PlatformStatus.limited);
-          expect(adapter.requiresLogin, isFalse);
-          expect(await adapter.isLoggedIn, isFalse);
-        case 'threads':
-          // Threads is implemented (Threads API) but limited
-          // to the account's own content and requires login.
-          // Guests get an empty timeline, never fake data —
-          // see threads_adapter_test.dart.
-          expect(adapter.status, PlatformStatus.limited);
-          expect(adapter.requiresLogin, isTrue);
-          expect(await adapter.fetchTimeline(), isEmpty);
-          expect(await adapter.isLoggedIn, isFalse);
-        case 'webview_x':
-        case 'webview_instagram':
-        case 'webview_facebook':
-          // WebView fallback: the official mobile web runs in-app,
-          // login stays in the WebView, no native feed — see
-          // webview_adapter_test.dart.
-          expect(adapter.status, PlatformStatus.webview);
-          expect(adapter.requiresLogin, isFalse);
-          expect(adapter.capabilities, isEmpty);
-          expect(await adapter.fetchTimeline(), isEmpty);
-          expect(await adapter.isLoggedIn, isFalse);
-        default:
-          expect(adapter.status, PlatformStatus.planned);
-          expect(await adapter.fetchTimeline(), isEmpty);
-          expect(await adapter.isLoggedIn, isFalse);
-      }
-    }
+  tearDown(() async {
+    if (await tmpDir.exists()) await tmpDir.delete(recursive: true);
   });
 
-  testWidgets('app renders the timeline tab and the platform list',
-      (WidgetTester tester) async {
-    // Fake adapters: the real registry would do network I/O on the
-    // timeline tab (guest feeds), which a smoke test must not need.
+  testWidgets('three tabs render and switch', (tester) async {
+    final manager = TrainingManager(
+      backend: FakeEngineBackend(),
+      documentsDir: tmpDir,
+    );
+    addTearDown(manager.dispose);
     await tester.pumpWidget(
-      ChangeNotifierProvider<AppState>(
-        create: (_) => AppState(adapters: <PlatformAdapter>[
-          FakeAdapter(id: 'fake_a', displayName: 'Telegram'),
-          FakeAdapter(id: 'fake_b', displayName: 'Mastodon'),
-          FakeAdapter(id: 'fake_c', displayName: 'Bluesky'),
-        ]),
-        child: const SimilarXApp(),
+      MaterialApp(
+        home: _TestShell(manager: manager),
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Similar-X'), findsWidgets);
-    expect(find.text('Timeline'), findsOneWidget);
-    expect(find.text('No posts yet — pull to refresh.'), findsOneWidget);
-    // The platform list lives on the second tab.
-    await tester.tap(find.text('Platforms'));
+
+    // Train tab is shown first: corpus section + start button.
+    expect(find.text('语料'), findsOneWidget);
+    expect(find.text('开始训练'), findsOneWidget);
+    expect(find.text('超参数'), findsOneWidget);
+
+    // Switch to Chat.
+    await tester.tap(find.text('对话'));
     await tester.pumpAndSettle();
-    expect(find.text('Telegram'), findsOneWidget);
-    expect(find.text('Mastodon'), findsOneWidget);
-    expect(find.text('Bluesky'), findsOneWidget);
+    expect(find.text('生成'), findsOneWidget);
+
+    // Switch to Brain.
+    await tester.tap(find.text('大脑'));
+    await tester.pumpAndSettle();
+    expect(find.text('大脑信息'), findsOneWidget);
+    expect(find.text('导出大脑 (.brain)'), findsOneWidget);
+    expect(find.text('新建大脑'), findsOneWidget);
   });
+
+  testWidgets('app boots with the real main entry', (tester) async {
+    await tester.pumpWidget(
+      const TinyTrainerApp(initialLocale: AppLocale.zh),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('TinyTrainer'), findsWidgets);
+    expect(find.text('训练'), findsWidgets);
+  });
+}
+
+/// Minimal shell hosting the three pages (mirrors main.dart's scaffold).
+class _TestShell extends StatefulWidget {
+  final TrainingManager manager;
+  const _TestShell({required this.manager});
+
+  @override
+  State<_TestShell> createState() => _TestShellState();
+}
+
+class _TestShellState extends State<_TestShell> {
+  int _index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return StringsScope(
+      strings: const Strings(AppLocale.zh),
+      onLocaleChanged: (_) {},
+      child: Scaffold(
+        body: IndexedStack(
+          index: _index,
+          children: [
+            TrainPage(manager: widget.manager),
+            ChatPage(manager: widget.manager),
+            BrainPage(manager: widget.manager),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.school), label: '训练'),
+            NavigationDestination(
+              icon: Icon(Icons.chat_bubble_outline),
+              label: '对话',
+            ),
+            NavigationDestination(icon: Icon(Icons.psychology), label: '大脑'),
+          ],
+        ),
+      ),
+    );
+  }
 }

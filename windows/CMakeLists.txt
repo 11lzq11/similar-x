@@ -1,10 +1,10 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(similar_x LANGUAGES CXX)
+project(tiny_trainer LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "similar_x")
+set(BINARY_NAME "tiny_trainer")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -80,17 +80,6 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
-
-# TDLib native library (fetched by scripts/fetch_tdlib.py --platform
-# windows; never committed). Installed next to the executable, which is
-# on the DLL search path at runtime.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tdjson.dll")
-  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/tdjson.dll"
-    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-    COMPONENT Runtime)
-else()
-  message(WARNING "tdjson.dll not found — run scripts/fetch_tdlib.py --platform windows; Telegram will be unavailable.")
-endif()
 
 if(PLUGIN_BUNDLED_LIBRARIES)
   install(FILES "${PLUGIN_BUNDLED_LIBRARIES}"

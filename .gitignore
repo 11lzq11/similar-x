@@ -46,13 +46,3 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
-
-# TDLib native libraries (Telegram). Fetched at build time by
-# scripts/fetch_tdlib.py from the pinned release in
-# scripts/tdjson-manifest.json; never committed (each is ~13-22 MB
-# compressed, ~26-59 MB unpacked).
-/android/app/src/main/jniLibs/
-/ios/Runner/tdjson/
-/macos/Runner/tdjson/
-/windows/tdjson.dll
-/linux/libtdjson.so

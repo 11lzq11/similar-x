@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Similar-X
-Comment=One app for every social network
-Exec=similar_x
-Icon=similar-x
-Terminal=false
-Type=Application
-Categories=Network;InstantMessaging;Social;
-StartupWMClass=similar_x

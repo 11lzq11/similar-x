@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.similarx" "\0"
-            VALUE "FileDescription", "similar_x" "\0"
+            VALUE "CompanyName", "com.tinytrainer" "\0"
+            VALUE "FileDescription", "tiny_trainer" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "similar_x" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.similarx. All rights reserved." "\0"
-            VALUE "OriginalFilename", "similar_x.exe" "\0"
-            VALUE "ProductName", "similar_x" "\0"
+            VALUE "InternalName", "tiny_trainer" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.tinytrainer. All rights reserved." "\0"
+            VALUE "OriginalFilename", "tiny_trainer.exe" "\0"
+            VALUE "ProductName", "tiny_trainer" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

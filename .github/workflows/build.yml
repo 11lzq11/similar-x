@@ -1,4 +1,4 @@
-name: build
+name: Build
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   analyze:
@@ -47,11 +48,10 @@ jobs:
           flutter-version: '3.50.0'
           channel: stable
       - run: flutter pub get
-      - run: python3 scripts/fetch_tdlib.py --platform android
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
-          name: Similar-X-Android
+          name: TinyTrainer-Android
           path: build/app/outputs/flutter-apk/app-release.apk
 
   build-windows:
@@ -65,11 +65,10 @@ jobs:
           flutter-version: '3.50.0'
           channel: stable
       - run: flutter pub get
-      - run: python3 scripts/fetch_tdlib.py --platform windows
       - run: flutter build windows --release
       - uses: actions/upload-artifact@v4
         with:
-          name: Similar-X-Windows
+          name: TinyTrainer-Windows
           path: build/windows/x64/runner/Release/
 
   build-ios:
@@ -83,19 +82,20 @@ jobs:
           flutter-version: '3.50.0'
           channel: stable
       - run: flutter pub get
-      - run: python3 scripts/fetch_tdlib.py --platform ios
-      - run: flutter build ipa --release --no-codesign
-      # `flutter build ipa --no-codesign` builds the .xcarchive but skips
-      # the .ipa ("Codesigning disabled, skipping IPA"), so package the
-      # unsigned .ipa by hand: an .ipa is a zip with Payload/<App>.app.
-      - run: |
-          mkdir -p build/ios/ipa/Payload
-          cp -r build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app build/ios/ipa/Payload/
-          cd build/ios/ipa && zip -r Similar-X-iOS-unsigned.ipa Payload
+      - run: flutter build ipa --no-codesign
+      # `flutter build ipa --no-codesign` only produces an .xcarchive, so
+      # hand-package Runner.app into an unsigned .ipa (same trick as the
+      # old Similar-X repo used).
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH=$(find build/ios/archive -name "Runner.app" -type d | head -1)
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r TinyTrainer-iOS-unsigned.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
-          name: Similar-X-iOS-unsigned
-          path: build/ios/ipa/*.ipa
+          name: TinyTrainer-iOS
+          path: TinyTrainer-iOS-unsigned.ipa
 
   build-macos:
     name: macOS DMG (unsigned)
@@ -108,16 +108,14 @@ jobs:
           flutter-version: '3.50.0'
           channel: stable
       - run: flutter pub get
-      - run: python3 scripts/fetch_tdlib.py --platform macos
       - run: flutter build macos --release
-      - run: |
-          hdiutil create -volname "Similar-X" \
-            -srcfolder "build/macos/Build/Products/Release/similar_x.app" \
-            -ov -format UDZO "Similar-X-macOS.dmg"
+      - name: Package DMG
+        run: |
+          hdiutil create -volname TinyTrainer -srcfolder build/macos/Build/Products/Release/tiny_trainer.app -ov -format UDZO TinyTrainer-macOS.dmg
       - uses: actions/upload-artifact@v4
         with:
-          name: Similar-X-macOS
-          path: Similar-X-macOS.dmg
+          name: TinyTrainer-macOS
+          path: TinyTrainer-macOS.dmg
 
   build-linux:
     name: Linux
@@ -125,41 +123,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.50.0'
           channel: stable
-      - run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
       - run: flutter pub get
-      - run: python3 scripts/fetch_tdlib.py --platform linux
       - run: flutter build linux --release
+      - name: Package Linux tarball
+        run: |
+          tar -czf TinyTrainer-Linux.tar.gz -C build/linux/x64/release/bundle .
       - uses: actions/upload-artifact@v4
         with:
-          name: Similar-X-Linux
-          path: build/linux/x64/release/bundle/
-
-  release:
-    name: Release
-    needs: [build-android, build-windows, build-ios, build-macos, build-linux]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      - run: |
-          cd artifacts/Similar-X-Windows && zip -r ../Similar-X-Windows.zip . && cd ../..
-          cd artifacts/Similar-X-Linux && tar czf ../Similar-X-Linux.tar.gz . && cd ../..
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/Similar-X-Android/*
-            artifacts/Similar-X-iOS-unsigned/*
-            artifacts/Similar-X-macOS/*
-            artifacts/Similar-X-Windows.zip
-            artifacts/Similar-X-Linux.tar.gz
-          generate_release_notes: true
+          name: TinyTrainer-Linux
+          path: TinyTrainer-Linux.tar.gz

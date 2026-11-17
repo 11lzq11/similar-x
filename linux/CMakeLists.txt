@@ -4,10 +4,10 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "similar_x")
+set(BINARY_NAME "tiny_trainer")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.similarx.similar_x")
+set(APPLICATION_ID "com.tinytrainer.tiny_trainer")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -42,14 +42,6 @@ endif()
 function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_features(${TARGET} PUBLIC cxx_std_14)
   target_compile_options(${TARGET} PRIVATE -Wall -Werror)
-  # flutter_secure_storage_linux bundles an old nlohmann/json whose
-  # `operator"" _json` spacing is a deprecated literal operator; new
-  # Clang (21+) errors on it under -Werror. Demote just that one
-  # diagnostic back to a warning (Clang only; GCC has no such warning).
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${TARGET} PRIVATE
-      -Wno-error=deprecated-literal-operator)
-  endif()
   target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:-O3>")
   target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 endfunction()
@@ -107,17 +99,6 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
-
-# TDLib native library (fetched by scripts/fetch_tdlib.py --platform
-# linux; never committed). Installed into the bundle's lib/ directory,
-# which the executable's $ORIGIN/lib RPATH covers at runtime.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libtdjson.so")
-  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/libtdjson.so"
-    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-    COMPONENT Runtime)
-else()
-  message(WARNING "libtdjson.so not found — run scripts/fetch_tdlib.py --platform linux; Telegram will be unavailable.")
-endif()
 
 foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
   install(FILES "${bundled_library}"

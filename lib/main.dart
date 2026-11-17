@@ -1,52 +1,95 @@
-import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'
-    hide GlobalCupertinoLocalizations, GlobalMaterialLocalizations;
+// TinyTrainer (Flutter) — train a tiny Transformer on your phone or PC.
+// Three tabs: Train / Chat / Brain. The C engine runs in a background
+// isolate (see lib/engine/engine_worker.dart) so the UI never freezes.
 import 'package:material_ui/material_ui.dart';
-import 'package:provider/provider.dart';
 
-import 'adapters/registry.dart';
-import 'core/app_localizations.dart';
-import 'core/app_state.dart';
-import 'screens/home_screen.dart';
+import 'l10n/strings.dart';
+import 'services/training_manager.dart';
+import 'ui/brain_page.dart';
+import 'ui/chat_page.dart';
+import 'ui/train_page.dart';
 
-void main() {
-  runApp(
-    ChangeNotifierProvider<AppState>(
-      create: (_) => AppState(adapters: buildAdapterRegistry()),
-      child: const SimilarXApp(),
-    ),
-  );
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final locale = await TrainingManager.loadLocale();
+  runApp(TinyTrainerApp(initialLocale: locale));
 }
 
-/// Similar-X — one app for every social network.
-///
-/// The app shell, Chinese/English locales and the modular adapter
-/// registry live here; every registered adapter is a real
-/// implementation (see lib/adapters/). The home screen merges all
-/// adapters into one timeline and offers per-platform login and
-/// posting (see lib/screens/).
-class SimilarXApp extends StatelessWidget {
-  const SimilarXApp({super.key});
+class TinyTrainerApp extends StatefulWidget {
+  final AppLocale initialLocale;
+
+  const TinyTrainerApp({super.key, required this.initialLocale});
+
+  @override
+  State<TinyTrainerApp> createState() => _TinyTrainerAppState();
+}
+
+class _TinyTrainerAppState extends State<TinyTrainerApp> {
+  late AppLocale _locale;
+  late final TrainingManager _manager;
+  int _tabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _locale = widget.initialLocale;
+    _manager = TrainingManager();
+    // Start the engine worker + restore autosave in the background.
+    _manager.ensureReady();
+  }
+
+  @override
+  void dispose() {
+    _manager.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final AppState appState = context.watch<AppState>();
-    return MaterialApp(
-      onGenerateTitle: (BuildContext context) =>
-          AppLocalizations.of(context).appTitle,
-      locale: appState.locale,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    final strings = Strings(_locale);
+    return StringsScope(
+      strings: strings,
+      onLocaleChanged: (locale) => setState(() => _locale = locale),
+      child: MaterialApp(
+        title: 'TinyTrainer',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+          useMaterial3: true,
+        ),
+        home: Builder(
+          builder: (context) {
+            final s = Strings.of(context);
+            final pages = [
+              TrainPage(manager: _manager),
+              ChatPage(manager: _manager),
+              BrainPage(manager: _manager),
+            ];
+            return Scaffold(
+              appBar: AppBar(title: Text(s.appTitle)),
+              body: IndexedStack(index: _tabIndex, children: pages),
+              bottomNavigationBar: NavigationBar(
+                selectedIndex: _tabIndex,
+                onDestinationSelected: (i) => setState(() => _tabIndex = i),
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.school),
+                    label: s.tabTrain,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: s.tabChat,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.psychology),
+                    label: s.tabBrain,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
-      home: const HomeScreen(),
     );
   }
 }
