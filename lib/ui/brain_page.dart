@@ -70,7 +70,13 @@ class BrainPage extends StatelessWidget {
     final s = Strings.of(context);
     final ok = await manager.createNewBrain(manager.currentConfig);
     if (!context.mounted) return;
-    _snack(context, ok ? s.msgBrainCreated : s.msgInvalidParams);
+    if (ok) {
+      _snack(context, s.msgBrainCreated);
+    } else {
+      // Show the manager's real reason (validation / engine not ready /
+      // creation failed) instead of always blaming the hyper-parameters.
+      _snack(context, manager.takeMessage() ?? s.msgInvalidParams);
+    }
   }
 
   Future<void> _loadBaseBrain(BuildContext context) async {

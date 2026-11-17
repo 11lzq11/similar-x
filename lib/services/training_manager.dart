@@ -66,6 +66,14 @@ class TrainingManager extends ChangeNotifier {
 
   bool _initialised = false;
   bool _disposed = false;
+  // The in-flight initialisation. ensureReady() is called fire-and-forget
+  // from initState AND awaited by _requireBackend(); without sharing one
+  // Future, a second call returns early (because _initialised is already
+  // true) while the worker is still spawning — so _requireBackend() sees
+  // a null backend and every brain creation fails with a misleading
+  // "超参数超出范围" error. Sharing the Future makes every caller wait
+  // for the real initialisation to finish.
+  Future<void>? _readyFuture;
   int _totalTokens = 0;
   int _elapsedMs = 0;
   bool _stopRequested = false;
@@ -87,7 +95,12 @@ class TrainingManager extends ChangeNotifier {
   /// If a backend was injected (tests), it is used instead of spawning.
   /// Corpus/autosave restore failures are non-fatal (e.g. path_provider
   /// is unavailable in a widget test) and are swallowed.
-  Future<void> ensureReady() async {
+  /// Concurrent callers share one initialisation Future (see _readyFuture).
+  Future<void> ensureReady() {
+    return _readyFuture ??= _ensureReadyImpl();
+  }
+
+  Future<void> _ensureReadyImpl() async {
     if (_initialised) return;
     _initialised = true;
     _backend ??= _injectedBackend;
@@ -152,7 +165,14 @@ class TrainingManager extends ChangeNotifier {
       return false;
     }
     final backend = await _requireBackend();
-    if (backend == null) return false;
+    if (backend == null) {
+      // _requireBackend() only returns null when the engine worker failed
+      // to spawn; ensureReady() already posted '引擎启动失败：…' in that
+      // case, so surface it instead of failing silently (the Brain page
+      // used to show the misleading "超参数超出范围" for this path).
+      if (_message == null) _postMessage('引擎未就绪，请稍候再试');
+      return false;
+    }
     final ok = await backend.create(config);
     if (!ok) {
       _postMessage('创建大脑失败');
