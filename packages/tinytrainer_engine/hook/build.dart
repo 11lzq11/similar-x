@@ -42,12 +42,28 @@ void main(List<String> args) async {
         ompFlags = [];
     }
 
+    // The engine uses logf/log (rng_normal's Box-Muller, the loss). Those
+    // live in libm, which must be linked explicitly: without -lm the .so
+    // has an undefined "logf" and Android's dlopen refuses to load it
+    // ("cannot locate symbol logf"), so every create fails on the phone.
+    // (The native Android app's CMakeLists links `m` — that's why B
+    // never hit this.) Windows/MSVC and Apple link the math lib by
+    // default, so -lm is only needed on Android/Linux.
+    final List<String> mathFlags;
+    switch (targetOS) {
+      case OS.android:
+      case OS.linux:
+        mathFlags = ['-lm'];
+      default:
+        mathFlags = [];
+    }
+
     final cbuilder = CBuilder.library(
       name: packageName,
       assetName: 'tinytrainer_engine_bindings_generated.dart',
       sources: ['src/tinygpt.c'],
       // flags are passed to both the compile and the link step.
-      flags: ['-O2', '-Wall', '-Wextra', ...ompFlags],
+      flags: ['-O2', '-Wall', '-Wextra', ...ompFlags, ...mathFlags],
       language: Language.c,
       std: 'c99',
     );
