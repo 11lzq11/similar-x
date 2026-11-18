@@ -506,8 +506,9 @@ int tg_decode(const TGModel *m, const int *tokens, int n, char *out, int cap) {
 /* matmul 前向：out[bt,n] = bias[n] + sum_k inp[bt,k]*W[n,k]（W 为 [N,K] 行主序） */
 static void matmul_forward(float *out, const float *inp, const float *W, const float *bias,
                            int BT, int N, int K) {
+    int bt;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (BT > 16)
-    for (int bt = 0; bt < BT; bt++) {
+    for (bt = 0; bt < BT; bt++) {
         const float *x = inp + (size_t)bt * K;
         float *o = out + (size_t)bt * N;
         for (int n = 0; n < N; n++) {
@@ -521,8 +522,9 @@ static void matmul_forward(float *out, const float *inp, const float *W, const f
 /* matmul 反向求 dW：dW[n,k] += sum_bt dout[bt,n]*inp[bt,k] */
 static void matmul_backward_dW(float *dW, const float *dout, const float *inp,
                                int BT, int N, int K) {
+    int n;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (N > 32)
-    for (int n = 0; n < N; n++) {
+    for (n = 0; n < N; n++) {
         float *dw = dW + (size_t)n * K;
         for (int bt = 0; bt < BT; bt++) {
             float d = dout[(size_t)bt * N + n];
@@ -534,8 +536,9 @@ static void matmul_backward_dW(float *dW, const float *dout, const float *inp,
 /* matmul 反向求 dx：dx[bt,k] = sum_n dout[bt,n]*W[n,k] */
 static void matmul_backward_dx(float *dx, const float *dout, const float *W,
                                int BT, int N, int K) {
+    int bt;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (BT > 16)
-    for (int bt = 0; bt < BT; bt++) {
+    for (bt = 0; bt < BT; bt++) {
         const float *d = dout + (size_t)bt * N;
         float *x = dx + (size_t)bt * K;
         for (int k = 0; k < K; k++) x[k] = 0.0f;
@@ -548,8 +551,9 @@ static void matmul_backward_dx(float *dx, const float *dout, const float *W,
 }
 /* 偏置梯度：db[n] += sum_bt dout[bt,n] */
 static void bias_backward(float *db, const float *dout, int BT, int N) {
+    int n;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (N > 32)
-    for (int n = 0; n < N; n++) {
+    for (n = 0; n < N; n++) {
         float s = 0.0f;
         for (int bt = 0; bt < BT; bt++) s += dout[(size_t)bt * N + n];
         db[n] += s;
@@ -560,8 +564,9 @@ static void bias_backward(float *db, const float *dout, int BT, int N) {
 static void layernorm_forward(float *out, float *mean, float *rstd,
                               const float *inp, const float *w, const float *b,
                               int BT, int D) {
+    int bt;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (BT > 16)
-    for (int bt = 0; bt < BT; bt++) {
+    for (bt = 0; bt < BT; bt++) {
         const float *x = inp + (size_t)bt * D;
         float *o = out + (size_t)bt * D;
         float mu = 0.0f, var = 0.0f;
@@ -578,8 +583,9 @@ static void layernorm_forward(float *out, float *mean, float *rstd,
 static void layernorm_backward_dx(float *dx, const float *dout, const float *inp,
                                   const float *w, const float *mean, const float *rstd,
                                   int BT, int D, int add) {
+    int bt;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (BT > 16)
-    for (int bt = 0; bt < BT; bt++) {
+    for (bt = 0; bt < BT; bt++) {
         const float *do_ = dout + (size_t)bt * D;
         const float *x = inp + (size_t)bt * D;
         float *dx_ = dx + (size_t)bt * D;
@@ -605,8 +611,9 @@ static void layernorm_backward_dx(float *dx, const float *dout, const float *inp
 static void layernorm_backward_wb(float *dw, float *db, const float *dout,
                                   const float *inp, const float *mean, const float *rstd,
                                   int BT, int D) {
+    int d;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (D > 32)
-    for (int d = 0; d < D; d++) {
+    for (d = 0; d < D; d++) {
         float sw = 0.0f, sb = 0.0f;
         for (int bt = 0; bt < BT; bt++) {
             float xhat = (inp[(size_t)bt * D + d] - mean[bt]) * rstd[bt];
@@ -633,8 +640,9 @@ static void attention_forward(float *att, float *attout, const float *qkv,
                               int B, int T, int H, int D) {
     int dh = D / H;
     float scale = 1.0f / sqrtf((float)dh);
-#pragma omp parallel for collapse(2) if (B * H > 1)
-    for (int b = 0; b < B; b++) {
+    int b;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
+#pragma omp parallel for if (B * H > 1)
+    for (b = 0; b < B; b++) {
         for (int h = 0; h < H; h++) {
             for (int t1 = 0; t1 < T; t1++) {
                 float *prow = att + ((size_t)b * H + h) * (size_t)T * T + (size_t)t1 * T;
@@ -668,8 +676,9 @@ static void attention_backward(float *dqkv, const float *dattout, const float *a
                                const float *qkv, int B, int T, int H, int D) {
     int dh = D / H;
     float scale = 1.0f / sqrtf((float)dh);
-#pragma omp parallel for collapse(2) if (B * H > 1)
-    for (int b = 0; b < B; b++) {
+    int b;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
+#pragma omp parallel for if (B * H > 1)
+    for (b = 0; b < B; b++) {
         for (int h = 0; h < H; h++) {
             float dprow[1024]; /* T <= 1024（配置校验保证） */
             for (int t1 = 0; t1 < T; t1++) {
@@ -701,8 +710,9 @@ static void attention_backward(float *dqkv, const float *dattout, const float *a
 static float crossentropy_forward(float *logits, const int *targets, int B, int T, int V) {
     long BT = (long)B * T;
     double total = 0.0;
+    long bt;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for reduction(+:total) if (BT > 64)
-    for (long bt = 0; bt < BT; bt++) {
+    for (bt = 0; bt < BT; bt++) {
         float *lg = logits + bt * (long)V;
         float mx = lg[0];
         for (int v = 1; v < V; v++) if (lg[v] > mx) mx = lg[v];
@@ -722,8 +732,9 @@ static void crossentropy_backward(float *dlogits, const float *probs, const int 
                                   int B, int T, int V) {
     long BT = (long)B * T;
     float scale = 1.0f / (float)BT;
+    long bt;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (BT > 64)
-    for (long bt = 0; bt < BT; bt++) {
+    for (bt = 0; bt < BT; bt++) {
         const float *p = probs + bt * (long)V;
         float *d = dlogits + bt * (long)V;
         int t = targets[bt];
@@ -798,8 +809,9 @@ static float tg_forward(TGModel *m, const int *inputs, const int *targets, int B
     float *tok = m->params + m->off_tok;
     float *pos = m->params + m->off_pos;
     /* embedding */
+    long bt;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (BT > 16)
-    for (long bt = 0; bt < BT; bt++) {
+    for (bt = 0; bt < BT; bt++) {
         int t = (int)(bt % T);
         int id = inputs[bt];
         if (id < 0 || id >= V) id = 3;
@@ -819,20 +831,21 @@ static float tg_forward(TGModel *m, const int *inputs, const int *targets, int B
         attention_forward(la->att, la->attout, la->qkv, B, T, H, D);
         matmul_forward(la->x2, la->attout, lbase + m->o_attw, lbase + m->o_attb,
                        (int)BT, D, D);
+        long i;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (BT * D > 4096)
-        for (long i = 0; i < BT * D; i++) la->x2[i] += la->lin[i];
+        for (i = 0; i < BT * D; i++) la->x2[i] += la->lin[i];
         layernorm_forward(la->ln2, la->ln2_mean, la->ln2_rstd, la->x2,
                           lbase + m->o_ln2w, lbase + m->o_ln2b, (int)BT, D);
         matmul_forward(la->fcpre, la->ln2, lbase + m->o_fcw, lbase + m->o_fcb,
                        (int)BT, 4 * D, D);
         long nfc = BT * 4 * D;
 #pragma omp parallel for if (nfc > 4096)
-        for (long i = 0; i < nfc; i++) la->fc[i] = gelu_f(la->fcpre[i]);
+        for (i = 0; i < nfc; i++) la->fc[i] = gelu_f(la->fcpre[i]);
         float *out = (l + 1 < L) ? a.layer[l + 1].lin : a.xout;
         matmul_forward(out, la->fc, lbase + m->o_projw, lbase + m->o_projb,
                        (int)BT, D, 4 * D);
 #pragma omp parallel for if (BT * D > 4096)
-        for (long i = 0; i < BT * D; i++) out[i] += la->x2[i];
+        for (i = 0; i < BT * D; i++) out[i] += la->x2[i];
     }
     layernorm_forward(a.lnf, a.lnf_mean, a.lnf_rstd, a.xout,
                       m->params + m->off_lnf_w, m->params + m->off_lnf_b, (int)BT, D);
@@ -871,8 +884,9 @@ static void tg_backward(TGModel *m, const int *inputs, const int *targets, int B
         bias_backward(gbase + m->o_projb, s.dres, (int)BT, D);
         /* GELU 反向：gfc 原地变为 d(fcpre) */
         long nfc = BT * 4 * D;
+        long i;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (nfc > 4096)
-        for (long i = 0; i < nfc; i++) s.gfc[i] *= gelu_df(la->fcpre[i]);
+        for (i = 0; i < nfc; i++) s.gfc[i] *= gelu_df(la->fcpre[i]);
         /* fc 层：d(fcpre) → d(ln2) */
         matmul_backward_dx(s.g1, s.gfc, lbase + m->o_fcw, (int)BT, 4 * D, D);
         matmul_backward_dW(gbase + m->o_fcw, s.gfc, la->ln2, (int)BT, 4 * D, D);
@@ -911,8 +925,9 @@ static void tg_backward(TGModel *m, const int *inputs, const int *targets, int B
     }
     /* dPosEmbd：对 batch 求和 */
     float *gpos = m->grads + m->off_pos;
+    int t;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (T > 16)
-    for (int t = 0; t < T; t++) {
+    for (t = 0; t < T; t++) {
         float *g = gpos + (size_t)t * D;
         for (int d = 0; d < D; d++) {
             float sum = 0.0f;
@@ -943,8 +958,9 @@ static void adamw_segment(float *p, float *g, float *mm, float *vv, long n,
                           float lr, float b1, float b2, float eps, float wd,
                           long t, float bc1, float bc2) {
     (void)t; /* 时间步已折进 bc1/bc2，参数保留作接口说明 */
+    long i;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for if (n > 4096)
-    for (long i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         float grad = g[i];
         mm[i] = b1 * mm[i] + (1.0f - b1) * grad;
         vv[i] = b2 * vv[i] + (1.0f - b2) * grad * grad;
@@ -959,14 +975,15 @@ static void tg_adamw_step(TGModel *m, float lr) {
     long n = m->n_params;
     /* 全局梯度范数 */
     double norm2 = 0.0;
+    long i;  /* MSVC OpenMP 2.0: loop var must be declared before the loop (C3015) */
 #pragma omp parallel for reduction(+:norm2) if (n > 4096)
-    for (long i = 0; i < n; i++) norm2 += (double)m->grads[i] * (double)m->grads[i];
+    for (i = 0; i < n; i++) norm2 += (double)m->grads[i] * (double)m->grads[i];
     if (c->grad_clip > 0) {
         double norm = sqrt(norm2);
         if (norm > c->grad_clip) {
             float scale = (float)(c->grad_clip / norm);
 #pragma omp parallel for if (n > 4096)
-            for (long i = 0; i < n; i++) m->grads[i] *= scale;
+            for (i = 0; i < n; i++) m->grads[i] *= scale;
         }
     }
     long t = m->step + 1; /* Adam 时间步（1 起） */
