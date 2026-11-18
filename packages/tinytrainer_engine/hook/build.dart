@@ -58,14 +58,33 @@ void main(List<String> args) async {
         mathFlags = [];
     }
 
+    // Compiler flags and the C standard are NOT portable across
+    // compilers, and native_toolchain_c passes them through verbatim:
+    //   - GCC/Clang take -O2/-Wall/-Wextra; MSVC takes /O2//W4 and
+    //     rejects -Wextra.
+    //   - `std` reaches MSVC as /std:<std> — /std:c99 does not exist
+    //     (MSVC only knows c11/c17/clatest), so a c99 hook fails the
+    //     Windows native-assets build outright. tinygpt.c uses only
+    //     standard C (no VLAs, no POSIX-only headers), so c11 builds it.
+    final String std;
+    final List<String> baseFlags;
+    switch (targetOS) {
+      case OS.windows:
+        std = 'c11';
+        baseFlags = ['/O2', '/W4'];
+      default:
+        std = 'c99';
+        baseFlags = ['-O2', '-Wall', '-Wextra'];
+    }
+
     final cbuilder = CBuilder.library(
       name: packageName,
       assetName: 'tinytrainer_engine_bindings_generated.dart',
       sources: ['src/tinygpt.c'],
       // flags are passed to both the compile and the link step.
-      flags: ['-O2', '-Wall', '-Wextra', ...ompFlags, ...mathFlags],
+      flags: [...baseFlags, ...ompFlags, ...mathFlags],
       language: Language.c,
-      std: 'c99',
+      std: std,
     );
     await cbuilder.run(
       input: input,
